@@ -3,6 +3,8 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
+set -eo pipefail
+
 if [ -z "$SERVER" ]; then
     echo "Please set SERVER to the ACME server's directory URL."
     exit 1
@@ -70,7 +72,13 @@ trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
+
+    # We're canceling out of an interactive Certbot prompt here causing it to
+    # exit with a nonzero error status on each run.
+    set +e
     RESULT=`echo c | $CERTBOT_CMD 2>&1`
+    set -e
+
     if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else
